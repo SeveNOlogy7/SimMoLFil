@@ -25,7 +25,7 @@ classdef Operation
         function m = subsref(obj,S)
             if S.type == "()"
                 if length(S.subs) == 1 && isa(S.subs{:},"double")
-                    % Operation_obj_array(ii) 
+                    % Operation_obj_array(ii)
                     % This is just a normal 1d array subsref
                     % use builtin subsref here
                     m = builtin('subsref',obj,S);
@@ -42,8 +42,8 @@ classdef Operation
                             error("%s: need simulation.Model arguments\n", obj.name);
                         end
                         % S.subs contains only Model objects now
-%                         s = cellfun(@char,S.subs);
-%                         disp(sprintf("You called %s with argument: ", obj.name) + join(s,","));
+                        %                         s = cellfun(@char,S.subs);
+                        %                         disp(sprintf("You called %s with argument: ", obj.name) + join(s,","));
                         if obj.op_type == "Feedback"
                             % Special Type check for Feedback
                             L_operand_type = S.subs{1}.get_op_type();
@@ -78,14 +78,14 @@ classdef Operation
                     return
                 end
                 % put in parameters
-                params = [];
                 parameter_names = fieldnames(obj.parameters);
+                params = strings(length(parameter_names),1);
                 for ii = 1:length(parameter_names)
                     param = obj.parameters.(parameter_names{ii});
                     if isa(param,"double") || isa(param,"string")
-                        params = [params, parameter_names{ii}+"="+param];
+                        params(ii) = parameter_names{ii}+"="+param;
                     else
-                        params = [params, parameter_names{ii}+"="+class(param)];
+                        params(ii) = parameter_names{ii}+"="+class(param);
                     end
                     
                 end
@@ -93,9 +93,9 @@ classdef Operation
                 s = sprintf("%s[%s]",s,params);
             else
                 % convert 1d array of objects to string
-                s = [];
+                s = strings(length(obj),1);
                 for ii = 1:length(obj)
-                    s = [s,char(obj(ii))];
+                    s(ii) = char(obj(ii));
                 end
                 s = join(s,newline);
             end

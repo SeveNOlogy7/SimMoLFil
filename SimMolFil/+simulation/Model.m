@@ -3,10 +3,10 @@ classdef Model
     %   A DFG is a graph that present complex data flow as nodes and
     %   directed edges. Each node has input and output, and performs some
     %   operation. Use DFG to describle a simulation model. This class aims
-    %   to construct a DFG presentation of a model using some MATLAB 
+    %   to construct a DFG presentation of a model using some MATLAB
     %   build-in arithmatic operators.
     %
-    %   Technically, a node is a smallest model unit. A full model is a 
+    %   Technically, a node is a smallest model unit. A full model is a
     %   combination of model units, hence a DFG. For any node in the model,
     %   call statements to display the generating DFG for that node, which
     %   is basicly a sub-model. A DFG is displayed in multilines of texts
@@ -14,11 +14,11 @@ classdef Model
     %
     %   Here is an example:
     %       fiber = component.Fiber();  % Define fiber component
-	%       SMF1 = simulation.Fiber("SMF1", fiber)  % Operation of node SMF1
+    %       SMF1 = simulation.Fiber("SMF1", fiber)  % Operation of node SMF1
     %       SMF2 = simulation.Fiber("SMF2", fiber)  % Operation of node SMF2
     %       SMF3 = simulation.Fiber("SMF3", fiber)  % Operation of node SMF3
     %       In = simulation.Input("In") % A node(Model) that asks for input
-    %       Out = In + SMF1 + SMF2 + SMF3;  % An output defined using + 
+    %       Out = In + SMF1 + SMF2 + SMF3;  % An output defined using +
     %       Simulation = Out.statements()   % Print the DFG
     %   This example shows how to constuct a model that cascades 3 sections
     %   of optical fiber.
@@ -29,7 +29,7 @@ classdef Model
     %       t2 = SMF2.Fiber[fiber=component.Fiber](t1)
     %       t3 = SMF3.Fiber[fiber=component.Fiber](t2)
     %
-    %   See unittests for more examples   
+    %   See unittests for more examples
     
     properties (Access = private)
         operation
@@ -62,7 +62,7 @@ classdef Model
             end
             
             persistent next_id;
-            if isempty(next_id) 
+            if isempty(next_id)
                 next_id = 0;
             end
             obj.operation = operation;
@@ -77,7 +77,7 @@ classdef Model
             lines = string([]);
             function visitor(o)
                 s_temp = char(o);
-                % If some inputs are reused, there will be duplicate 
+                % If some inputs are reused, there will be duplicate
                 % statements found by dfs, should avoid duplication
                 if isempty(find(lines == s_temp, 1))
                     lines = [lines, char(o)];
@@ -106,7 +106,7 @@ classdef Model
             end
             
         end
-          
+        
         % overload cell call
         function c = cell(obj)
             c = cell(1,length(obj));
@@ -120,9 +120,9 @@ classdef Model
         end
         
         function s = char(obj)
-            args = [];
+            args = strings(length(obj.inputs),1);
             for ii = 1:length(obj.inputs)
-                args = [args;sprintf("t%d", obj.inputs(ii).id)];
+                args(ii) = sprintf("t%d", obj.inputs(ii).id);
             end
             if isempty(args)
                 args = "";
@@ -148,7 +148,6 @@ classdef Model
     
     methods (Access = private)
         function depth_first_search(obj, ids, visitor)
-            g_ids = containers.Map(obj.id, true);
             ids = containers.Map(obj.id, true);
             for ii = 1: length(obj.inputs)
                 if isKey(ids,obj.inputs(ii).id)
