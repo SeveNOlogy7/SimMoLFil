@@ -98,13 +98,25 @@ classdef Model
                 a simulation.Model
                 b simulation.Operation
             end
-            
             for ii = 1:length(b)
                 op = b(ii);
                 inputs = cell(a);
                 varargout{ii} = op(inputs{:});
             end
-            
+        end
+        
+        function eval = build(obj, builder)
+            %BUILD convert an model into evaluation
+            lines = string([]);
+            function visitor(o)
+                s_temp = char(o);
+                if isempty(find(lines == s_temp, 1))
+                    lines = [lines, char(o)];
+                    builder = builder.append(o);
+                end
+            end
+            obj.depth_first_search({}, @visitor);
+            eval = builder.build();
         end
         
         % overload cell call
@@ -120,21 +132,40 @@ classdef Model
         end
         
         function s = char(obj)
-            args = strings(length(obj.inputs),1);
-            for ii = 1:length(obj.inputs)
-                args(ii) = sprintf("t%d", obj.inputs(ii).id);
-            end
-            if isempty(args)
-                args = "";
+            if length(obj) == 1
+                args = strings(length(obj.inputs),1);
+                for ii = 1:length(obj.inputs)
+                    args(ii) = sprintf("t%d", obj.inputs(ii).id);
+                end
+                if isempty(args)
+                    args = "";
+                else
+                    args = join(args,",");
+                end
+                s = sprintf("t%d = %s(%s)",obj.id, char(obj.operation),args);
             else
-                args = join(args,",");
+                % convert 1d array of objects to string
+                s = strings(length(obj),1);
+                for ii = 1:length(obj)
+                    s(ii) = char(obj(ii));
+                end
+                s = join(s,newline);
             end
-            s = sprintf("t%d = %s(%s)",obj.id, char(obj.operation),args);
         end
         
         % getters
+        function t = get_operation(obj)
+            t = obj.operation;
+        end
         function t = get_op_type(obj)
             t = obj.operation.op_type;
+        end
+        
+        function t = get_inputs_id(obj)
+            t = zeros(1,length(obj.inputs));
+            for ii = 1:length(t)
+                t(ii) = obj.inputs(ii).id+1;    % to MATLAB convention
+            end
         end
         
         % setters

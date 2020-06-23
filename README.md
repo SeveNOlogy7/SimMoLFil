@@ -26,7 +26,7 @@ Imaging you can simply write somthing like
 ```MATLAB
 model = defind some model use DFG
 evaluaion = model.build(Some Builder)
-evaluaion.run(Some simulation settings)
+evaluaion(Some simulation settings)
 ```
 
 In this way, it is easy to evaluate a same model with 
@@ -78,15 +78,16 @@ These staments show what any builders of the DFG model should implement to make 
 ### Codes Arrangement
 * **simulation package** contains codes that help reuse a few MATLAB syntax to present a MoLFil Model in DFG
 and simply build the MoLFil Model to 
-    Human readable statements
-    Evaluation object, given a specific Builder implementation
+    * Human readable statements
+    * Evaluation object, given a specific Builder implementation
 
 * **component package** contains optical components packed in classes. 
 And some helper methods to calculate parameters for those components.
 
 ### Todos
-- [ ] DFG generation (working on it)
-- [ ] DFG build process
+- [x] DFG generation
+- [x] DFG build process
+- [ ] DFG Evaluation Class (working on it)
+- [ ] A pure MATLAB Builder implementation using existing codes in SimMLFL (working on it)
 - [ ] Fill component package with concrete classes
-- [ ] A pure MATLAB Builder implementation using existing codes in SimMLFL
 - [ ] Examples
