@@ -76,12 +76,7 @@ classdef Model
             %   each statement corresponds to a node in the DFG
             lines = string([]);
             function visitor(o)
-                s_temp = char(o);
-                % If some inputs are reused, there will be duplicate
-                % statements found by dfs, should avoid duplication
-                if isempty(find(lines == s_temp, 1))
-                    lines = [lines, char(o)];
-                end
+                lines = [lines, char(o)];
             end
             obj.depth_first_search({},@visitor);
             s = join(lines,newline);
@@ -107,13 +102,8 @@ classdef Model
         
         function eval = build(obj, builder)
             %BUILD convert an model into evaluation
-            lines = string([]);
             function visitor(o)
-                s_temp = char(o);
-                if isempty(find(lines == s_temp, 1))
-                    lines = [lines, char(o)];
-                    builder.append(o);
-                end
+                builder.append(o);
             end
             obj.depth_first_search({}, @visitor);
             eval = builder.build();
@@ -157,8 +147,13 @@ classdef Model
         function t = get_operation(obj)
             t = obj.operation;
         end
+        
         function t = get_op_type(obj)
             t = obj.operation.op_type;
+        end
+        
+        function t = get_op_name(obj)
+            t = obj.operation.name;
         end
         
         function t = get_inputs_id(obj)
@@ -179,7 +174,13 @@ classdef Model
     
     methods (Access = private)
         function depth_first_search(obj, ids, visitor)
-            ids = containers.Map(obj.id, true);
+            % ids: Map(id, visited?)
+            % visitor: function(obj)
+            if isempty(ids)
+                ids = containers.Map(obj.id, false);
+            else
+                ids(obj.id) = true;
+            end
             for ii = 1: length(obj.inputs)
                 if isKey(ids,obj.inputs(ii).id)
                     continue
