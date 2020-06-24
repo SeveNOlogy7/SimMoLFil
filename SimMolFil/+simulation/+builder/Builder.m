@@ -1,4 +1,4 @@
-classdef Builder
+classdef Builder < handle
     %BUILDER A builder class that convert a Model into Evaluation
     % append method, add a model to the program that is being built
     % build method, return a Evaluation based on current program
@@ -13,7 +13,7 @@ classdef Builder
             obj.program = [];
         end
         
-        function obj = append(obj, model)
+        function append(obj, model)
             % APPEDND, add a model to the program that is being built
             obj.program = [obj.program; model];
         end

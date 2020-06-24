@@ -112,7 +112,7 @@ classdef Model
                 s_temp = char(o);
                 if isempty(find(lines == s_temp, 1))
                     lines = [lines, char(o)];
-                    builder = builder.append(o);
+                    builder.append(o);
                 end
             end
             obj.depth_first_search({}, @visitor);
