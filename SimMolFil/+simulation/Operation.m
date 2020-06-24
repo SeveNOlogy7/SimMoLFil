@@ -23,6 +23,7 @@ classdef Operation
         % overload subsref, make operation object callable
         % also handle 1d array sub reference
         function m = subsref(obj,S)
+            import simulation.*
             if S.type == "()"
                 if length(S.subs) == 1 && isa(S.subs{:},"double")
                     % Operation_obj_array(ii)
@@ -51,12 +52,10 @@ classdef Operation
                                 error("Feedback need Reccurence type input\n");
                             end
                             % t = Feedback(l,r)
-                            % Feedback result in a same Recurrence model l
-                            % with a new input replaced by the r operand of
-                            % feedback
-                            m = S.subs{1}.set_inputs(S.subs{2});
+                            m = Model(Operation(S.subs{1}.get_op_name(),"Feedback",2,...
+                                struct()),[S.subs{:}]);
                         else
-                            m = simulation.Model(obj,[S.subs{:}]);
+                            m = Model(obj,[S.subs{:}]);
                         end
                     end
                 end
