@@ -104,12 +104,7 @@ RepeatFre = c/2/Length_cavity;                               	% Hz
 amf1.RepeatFre = RepeatFre;
 
 %% INPUT FIELD
-N2 = 1^2;                             	% Soliton Order
-tfwhm = 120;                            % ps
-P_peak = 2*N2*abs(smf5.betaw(3))/smf5.gamma/tfwhm^2;    % Peak power of the initial pulse (W)
-u0 =sqrt(P_peak)*sech(t/tfwhm);  %initial field shape in W^0.5
-randn('state',0);
-u0 = abs(wgn(nt,1,25))'.*u0;
+u0 = rand_sech(nt,time,smf5.betaw(3),smf5.gamma);
 
 if ~reinject_flag
     u = u0;
