@@ -42,7 +42,7 @@ classdef DFGTest < matlab.unittest.TestCase
         function testCoupler(testCase)
             % Test Coupler model
             createFixture(testCase);
-            coupler = component.Coupler();
+            coupler = component.Coupler(0.5);
             In1 = simulation.Input("In1");
             In2 = simulation.Input("In2");
             OC = simulation.Coupler("OC", coupler);
@@ -65,7 +65,7 @@ classdef DFGTest < matlab.unittest.TestCase
         function testNOLM(testCase)
             % Test Creation of a NOLM model
             createFixture(testCase);
-            coupler = component.Coupler();
+            coupler = component.Coupler(0.5);
             fiber = component.Fiber();
             SMF = simulation.Fiber("SMF1", fiber);
             In = simulation.Input("In");
@@ -131,7 +131,7 @@ classdef DFGTest < matlab.unittest.TestCase
         function testRecuurence(testCase)
             createFixture(testCase);
             
-            coupler = component.Coupler();
+            coupler = component.Coupler(0.5);
             fiber = component.Fiber();
             
             SMF = simulation.Fiber("SMF", fiber);
@@ -161,11 +161,11 @@ classdef DFGTest < matlab.unittest.TestCase
         function testFigure8(testCase)
             createFixture(testCase);
             
-            coupler_NOLM = component.Coupler();
-            coupler_output = component.Coupler();
+            coupler_NOLM = component.Coupler(0.3);
+            coupler_output = component.Coupler(0.6);
             passive_fiber = component.Fiber();
             active_fiber = component.Fiber();
-            filter = component.Filter();
+            filter = component.Filter(1030, 1030, 7);
             
             SMF1 = simulation.Fiber("SMF1", passive_fiber);
             SMF2 = simulation.Fiber("SMF2", passive_fiber);

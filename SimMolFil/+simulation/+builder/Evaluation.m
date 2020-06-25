@@ -117,6 +117,25 @@ classdef Evaluation
             u = args;
             figure, plot(abs(u));
         end
+        
+        function u = Filter(model, operation, args, kwargs)
+            config = kwargs.("configuration");
+            filter = operation.parameters.("filter");
+            u = filter.filter_gauss(args, config.f0, config.df);
+        end
+        
+        
+        function u = CouplerOut1(model, operation, args, kwargs)
+            config = kwargs.("configuration");
+            coupler = operation.parameters.("coupler");
+            u = coupler.couplerOut1(args(:,1),args(:,2));
+        end
+        
+        function u = CouplerOut2(model, operation, args, kwargs)
+            config = kwargs.("configuration");
+            coupler = operation.parameters.("coupler");
+            u = coupler.couplerOut2(args(:,1),args(:,2));
+        end
     end
 end
 

@@ -81,6 +81,41 @@ classdef EvaluationTest < matlab.unittest.TestCase
                 "In",input));
             testCase.assertEqual(true,true);
         end
+        
+        function testFilterEvaluation(testCase)
+            BPF = simulation.Filter("BPF", component.Filter(1030, 1030, 7));
+            In = simulation.Input("In");
+            Out = In + BPF;
+            Eval = Out.build(simulation.builder.Builder());
+            
+            config = simulation.Configuration();
+            input = rand_sech(config.nt, config.time)';
+            result = Eval(struct("configuration",config,...
+                "In","sech"));
+            testCase.assertEqual(true,true);
+        end
+        
+        function testCouplerEvaluation(testCase)
+            % Test Coupler model
+            createFixture(testCase);
+            rho = 0.3;
+            In = simulation.Input("In");
+            OC = simulation.Coupler("OC", component.Coupler(rho));
+            
+            [Out1,Out2] = [In, 0] + OC;
+            Eval1 = Out1.build(simulation.builder.Builder());
+            Eval2 = Out2.build(simulation.builder.Builder());
+            
+            config = simulation.Configuration();
+            input = rand_sech(config.nt, config.time)';
+            result1 = Eval1(struct("configuration",config,...
+                "In","sech"));
+            result2 = Eval2(struct("configuration",config,...
+                "In","sech"));
+            
+            testCase.assertEqual(result1.*conj(result1),rho*input.^2,"RelTol",1e-6);
+            testCase.assertEqual(result2.*conj(result2),(1-rho)*input.^2,"RelTol",1e-6);
+        end
     end
 end
 
