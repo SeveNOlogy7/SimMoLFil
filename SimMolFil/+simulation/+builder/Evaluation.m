@@ -5,7 +5,8 @@ classdef Evaluation
     %   simulation results for dufferent sets of arguments.
     
     properties (Access = private)
-        program
+        program         % collection of models in order
+        variables       % collection of variables presenting light fields
     end
     
     methods
@@ -24,9 +25,9 @@ classdef Evaluation
             end
             % check parameters in kwargs.
             config = kwargs.configuration;
-            % Initialise light field memory
+            % Initialise light field variables
             nt = config.nt;
-            light_memory = zeros(nt,length(obj.program));
+            obj.variables = zeros(nt,length(obj.program));
             valid_operations = methods("simulation.builder.Evaluation");
             % Start calculation
             ii = 1;     % Model Pointer
@@ -36,9 +37,9 @@ classdef Evaluation
                 operation = model.get_operation();
                 op_type = obj.program(ii).get_op_type();
                 inputs_id = obj.program(ii).get_inputs_id();
-                args = light_memory(:,inputs_id);
+                args = obj.variables(:,inputs_id);
                 if ~isempty(find(ismember(valid_operations,op_type), 1))
-                    light_memory(:,ii) = ...
+                    obj.variables(:,ii) = ...
                         simulation.builder.Evaluation.(op_type)...
                         (model, operation, args, kwargs);
                 else
@@ -49,8 +50,8 @@ classdef Evaluation
                 % or maybe inside Recurrence function?
                 ii = ii + 1;
             end
-            % return 0 if nothing goes wrong for now
-            e = 0
+            % return the value of the last light_memory block
+            e = obj.variables(:,end);
         end
         
         function m = subsref(obj,S)
@@ -77,23 +78,44 @@ classdef Evaluation
     % Implementation of concrete function for each Operations
     methods (Static)
         function u = Input(model, operation, args, kwargs)
-            disp("Input")
-            u = 0;
+            % Read input from kwargs of Evaluation
+            value = kwargs.(operation.name);
+            if isa(value,"double")
+                u = value;
+            elseif isa(value,"string")
+                if value == "sech"
+                    config = kwargs.("configuration");
+                    u = rand_sech(config.nt, config.time)';
+                else
+                    error("Evaluation: not implemented kwargs value %s for operation %s\n", value, operation);
+                end
+            else
+                error("Evaluation: not implemented kwargs type %s for operation %s\n", class(value), operation);
+            end
         end
         
         function u = Const(model, operation, args, kwargs)
-            disp("Const")
-            u = operation.parameters.("value");
+            % Read Const value from operation parameters
+            value = operation.parameters.("value");
+            if isa(value,"double")
+                u = value;
+            else
+                error("Evaluation: not implemented kwargs type %s for operation %s\n", class(value), operation);
+            end
         end
         
         function u = Fiber(model, operation, args, kwargs)
-            disp("Fiber")
-            u = 0;
+            % Read Fiber component value from operation parameters
+            config = kwargs.("configuration");
+            fiber = operation.parameters.("fiber").cal_gamma(config.lambda0);
+            % use GNLSE solver
+            [u,~,~] =  IP_CQEM_FD(args',config.dt,config.dz,fiber,config.f0,config.tol,0,0);
+            u = u';
         end
         
         function u = Show(model, operation, args, kwargs)
-            disp("Show")
-            u = 0;
+            u = args;
+            figure, plot(abs(u));
         end
     end
 end

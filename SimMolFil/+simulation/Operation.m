@@ -24,7 +24,8 @@ classdef Operation
         % also handle 1d array sub reference
         function m = subsref(obj,S)
             import simulation.*
-            if S.type == "()"
+            % overload only single subsref, chained subsref uses built-in
+            if length(S)==1 && S.type == "()"
                 if length(S.subs) == 1 && isa(S.subs{:},"double")
                     % Operation_obj_array(ii)
                     % This is just a normal 1d array subsref
