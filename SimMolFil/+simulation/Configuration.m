@@ -3,37 +3,51 @@ classdef Configuration
     %   Detailed explanation goes here
     
     properties
-        nt
-        time
-        tol
-        N_trip
+        nt = 2^10       % number of points
+        time = 100      % width of time window (ps)
+        lambda0 = 1030  % pulse central wavelength (nm)
+        tol = 1e-7      % tolerance
+        N_trip = 300    % number of total runtrips
+        
+        f0          	% pulse central frequency (THz)
+        
+        dz = 0.00001  	% Initial longitudinal step (km)
+        dt              % time step (ps)
+        df              % frequencies separation (THz)
+        
+        t               % time vector (ps)
+        f               % frequencies vector (THz)
+        w               % angular frequencies vector (THz)
+        lambda          % lambdas vector (nm)
+       
     end
     
     methods
         function obj = Configuration(varargin)
             %CONFIGURATION Construct an instance of Configuration
-            obj.nt = 2^10;
-            obj.time = 100;
-            obj.tol = 1e-7;
-            obj.N_trip = 300;
-            switch(length(varargin))
-                case 0
-                    % pass
-                case 1
-                    obj.nt = varargin{1};
-                case 2
-                    obj.nt = varargin{1};
-                    obj.time = varargin{2};
-                case 3
-                    obj.nt = varargin{1};
-                    obj.time = varargin{2};
-                    obj.tol = varargin{3};
-                case 4
-                    obj.nt = varargin{1};
-                    obj.time = varargin{2};
-                    obj.tol = varargin{3};
-                    obj.N_trip = varargin{4};
+            for ii = 1:length(varargin)
+                switch(ii)
+                    case 1
+                        obj.nt = varargin{ii};
+                    case 2
+                        obj.time = varargin{ii};
+                    case 3
+                        obj.lambda0 = varargin{ii};
+                    case 4
+                        obj.tol = varargin{ii};
+                    case 5
+                        obj.N_trip = varargin{ii};
+                end
             end
+            obj.dt = obj.time/obj.nt;
+            obj.df = 1/obj.time;
+            obj.f0 = simulation.Constants.c/obj.lambda0;
+            
+            c = simulation.Constants.c;
+            obj.t = -obj.time/2:obj.dt:(obj.time/2-obj.dt);
+            obj.f=-(obj.nt/2)*obj.df:obj.df:(obj.nt/2-1)*obj.df; 
+            obj.lambda = c./(obj.f + c/obj.lambda0); 
+            obj.w = 2*pi*obj.f;
         end
     end
 end
