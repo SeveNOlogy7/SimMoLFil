@@ -3,20 +3,54 @@ classdef Fiber
     %   Detailed explanation goes here
     
     properties
-        Property1
+        core_radius     % um
+        Amod            % Mode Field Area (um^2)
+        n2              % Kerr coefficient (10^-16*cm^2/W)
+        gamma           % W^-1 * km^-1
+        alpha = 0    	% Atenuation coefficient (km^-1)
+        betaw           % beta coefficients (ps^n/nm)
+        L = 0   	% fiber length (km)
+        raman = 0   	% 0 = exclude raman effect
+        ssp = 0        	% 0 = disable self sharpen effect
+        type            % fiber type, to load predefined fiber specs
     end
     
     methods
-        function obj = Fiber()
+        function obj = Fiber(varargin)
             %FIBER Construct an instance of this class
-            %   Detailed explanation goes here
-            obj.Property1 = 0;
+            import component.*
+            switch(nargin)
+                case 0
+                    obj = Fiber("PM980");
+                case 1
+                    % Fiber(type)
+                    if isa(varargin{1},"string")
+                        switch (varargin{1})
+                            case "PM980"
+                                obj = Fiber(3.3,2.6,[0 0 24.5864 26.1949e-3]);
+                            case "PM1025"
+                                obj = Fiber(5,2.6,[0 0 20.8634 34.9621e-3]);
+                            case "F1025"
+                                obj = Fiber(5.25,2.6,[0 0 20.1814 36.8057e-3]);
+                            otherwise
+                                error("Fiber: not implemented fiber type %s\n",varargin{1});
+                        end
+                    else
+                        error("Fiber: not implemented argument types\n");
+                    end
+                case 3
+                    % Fiber(core_radius, n2, betaw)
+                    obj.core_radius = varargin{1};
+                    obj.Amod = pi*obj.core_radius^2;
+                    obj.n2 = varargin{2};
+                    obj.betaw = varargin{3};
+                otherwise
+                    error("Fiber: not implemented argument types\n");
+            end
         end
         
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
+        function obj = cal_gamma(obj,lambda0)
+            obj.gamma = 2*pi*obj.n2/lambda0/obj.Amod*1e4;
         end
     end
 end
