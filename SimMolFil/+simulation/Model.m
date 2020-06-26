@@ -89,9 +89,8 @@ classdef Model
             % output. Ideally an operator like -> looks better.
             % But no operator -> in matlab, use + instead.
             % Model->Operation
-            arguments
-                a simulation.Model
-                b simulation.Operation
+            if ~(isa(a,"simulation.Model") || isa(b,"simulation.Operation"))
+                error("Model: plus got imcompatible input type(s)");
             end
             for ii = 1:length(b)
                 op = b(ii);

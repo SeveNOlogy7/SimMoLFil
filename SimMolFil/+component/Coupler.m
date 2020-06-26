@@ -14,8 +14,8 @@ classdef Coupler
     methods
         function obj = Coupler(rho)
             %COUPLER Construct an instance of this class
-            arguments
-                rho {mustBeGreaterThanOrEqual(rho,0),mustBeLessThanOrEqual(rho,1)}
+            if rho<0 || rho>1
+                error("Coupler: Invalid rho range");
             end
             obj.rho = rho;
         end
