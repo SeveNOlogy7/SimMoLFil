@@ -4,7 +4,7 @@ function [ NLOP ] = NonLinearoperator_w(u_t,gamma,w,fo,fr,hrw,dt,mod)
     % Implement the right half side of equation (3) in the "Optimum 
     % Integration Procedures for Supercontinuum Simulation", which is a 
     % frequency domain formulation of equation (1)
-    if ~isfield(mod,'ssp') || mod.ssp == 1
+    if ~(isfield(mod,'ssp')||isprop(mod,'ssp')) || mod.ssp == 1
         NLOP = -1i*gamma*(1 + w/(2*pi*fo)).*fft(((1-fr)*u_t.*u_t.*conj(u_t))...
             + fr*dt*u_t.*ifft(hrw.*fft(u_t.*conj(u_t))));
     elseif fr ~= 0

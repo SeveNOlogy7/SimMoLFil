@@ -1,7 +1,7 @@
 function [ hrw,fr] = Raman_response_w( t,mod)
 %RAMAN_RESPONSE
 global Raman;
-if isfield(mod,'raman') && mod.raman==0
+if (isfield(mod,'raman') || isprop(mod,'raman')) && mod.raman==0
     hrw = 0;
     fr = 0;
 elseif isempty(Raman) || length(Raman.hrw)~=length(t)

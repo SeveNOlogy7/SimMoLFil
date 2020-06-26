@@ -40,8 +40,8 @@ propagedlength = 0;
 u1 = u0;
 nf = 1;
 
-if isfield(mod,'gssdB')
-    if isfield(mod,'gain_w')
+if isfield(mod,'gssdB') || isprop(mod,'gssdB')
+    if isfield(mod,'gain_w')|| isprop(mod,'gain_w')
         gain_w = mod.gain_w;
     else
         gain_w = filter_lorentz_tf(u1,mod.fbw,mod.fc,fo,1/dt/nt); 
@@ -70,12 +70,12 @@ while propagedlength < mod.L
     end
     
     % (re)constructing linear operator
-    if isfield(mod,'gssdB')
+    if isfield(mod,'gssdB')|| isprop(mod,'gssdB')
         % modify alpha to include saturated gain and gain spectral
 %         Pin0 = (sum(u1.*conj(u1))*nt);
         Pin0 = (sum(u1.*conj(u1))*dt)*mod.RepeatFre*1e-12;
 %         Pin0 = (sum(u1.*conj(u1)))*mod.RepeatFre*1e-12;
-        if isfield(mod,'pump_power')
+        if isfield(mod,'pump_power')|| isprop(mod,'pump_power')
             if ~exist('pump_power_t','var')
                 pump_power_t = mod.pump_power;
             end
