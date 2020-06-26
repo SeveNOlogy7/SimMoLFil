@@ -2,7 +2,7 @@
 % Cai, J.-H., Chen, H., Chen, S.-P. & Hou, J. Opt. Express 25, 4414 (2017).
 
 %% Structural Parameters to investigate
-landa_bw = 11; 
+lambda_bw = 11; 
 smf5_L = 0.025;
 NOLM_L = 0.0015;
 PsatdBm = 23.5;                         % use cal_AmpSimpPara.m to calculate from pump power
@@ -10,8 +10,8 @@ smf4_L = 0.002;
 
 %% Simulation Parameter 
 c = 299792.458;                      	% speed of light nm/ps
-lamda_pulse = 1030;                  	% pulse central lambda (nm)
-fo=c/lamda_pulse;                       % central pulse frequency (THz)
+lambda_pulse = 1030;                  	% pulse central lambda (nm)
+fo=c/lambda_pulse;                       % central pulse frequency (THz)
 
 % Numerical Parameters
 nt = 2^12;                              % number of spectral points
@@ -21,7 +21,7 @@ t = -time/2:dt:(time/2-dt);             % ps
 
 df=1/(nt*dt);                           % frequencies separation (Thz)
 f=-(nt/2)*df:df:(nt/2-1)*df;            % frequencies vector (en THz)
-lambda = c./(f + c/lamda_pulse);    	% lambdas vector (nm)
+lambda = c./(f + c/lambda_pulse);    	% lambdas vector (nm)
 w = 2*pi*f;                             % angular frequencies vector (in THz)
 dz = 0.00001;                        	% Initial longitudinal step (km)
 tol = 1e-7;
@@ -37,7 +37,7 @@ reinject_flag = 0;
 % Predefine of fiber parameters
 PM980.Amod = pi*3.3^2;                  % Mode Field Area (um^2) (um^2)
 PM980.n2 = 2.6;                      	% Kerr coefficient (10^-16*cm^2/W)
-PM980.gamma = 2*pi*PM980.n2/lamda_pulse/PM980.Amod*1e4;	% W^-1 * km^-1
+PM980.gamma = 2*pi*PM980.n2/lambda_pulse/PM980.Amod*1e4;	% W^-1 * km^-1
 PM980.alpha = 0;                       	% atenuation coef. (km^-1)
 PM980.betaw = [0 0 24.5864 26.1949e-3];	% beta coefficients (ps^n/nm)
 
@@ -46,12 +46,12 @@ PM980.ssp = 0;                        	% 0 = disable self sharpen effect
 
 PM1025 = PM980;
 PM1025.Amod = pi*5^2;
-PM1025.gamma = 2*pi*PM1025.n2/lamda_pulse/PM1025.Amod*1e4;	% W^-1 * km^-1
+PM1025.gamma = 2*pi*PM1025.n2/lambda_pulse/PM1025.Amod*1e4;	% W^-1 * km^-1
 PM1025.betaw = [0 0 20.8634 34.9621e-3];
 
 F10125 = PM980;
 F10125.Amod = pi*5.25^2;
-F10125.gamma = 2*pi*F10125.n2/lamda_pulse/F10125.Amod*1e4;	% W^-1 * km^-1
+F10125.gamma = 2*pi*F10125.n2/lambda_pulse/F10125.Amod*1e4;	% W^-1 * km^-1
 F10125.betaw = [0 0 20.1814 36.8057e-3];
 
 % smf1 module parameters
@@ -88,10 +88,10 @@ amf1.fbw = c/(1030)^2*80;
 amf1.fc = c/1030;
 
 % filter parameters
-filter.lamda_c = 1030;
-filter.landa_bw = landa_bw;
-filter.fc = c/filter.lamda_c;
-filter.f3dB = c/(filter.lamda_c)^2*filter.landa_bw;
+filter.lambda_c = 1030;
+filter.lambda_bw = lambda_bw;
+filter.fc = c/filter.lambda_c;
+filter.f3dB = c/(filter.lambda_c)^2*filter.lambda_bw;
 filter.n = 7;
 
 % coupler parameters
@@ -104,7 +104,7 @@ RepeatFre = c/2/Length_cavity;                               	% Hz
 amf1.RepeatFre = RepeatFre;
 
 %% INPUT FIELD
-u0 = rand_sech(nt,time,smf5.betaw(3),smf5.gamma);
+u0 = rand_sech(nt,time);
 
 if ~reinject_flag
     u = u0;
@@ -131,7 +131,7 @@ for ii = 1:N_trip
     if plot_all_fig == 1 && ii == N_trip
         dplot = 1;
     end
-    
+    %u->BPF->SMF4->AMF1->SMF5->NOLM->OC->u
     u_f = filter_gauss(u,filter.f3dB,filter.fc,filter.n,fo,df);
     u = u_f;
     
@@ -142,11 +142,11 @@ for ii = 1:N_trip
     [uf,ub] = coupler(u,0,NOLM.rho);
     % forward light cp1o-smf1-NRPS-smf2-cp2o
     [ufo,~,Plotdata_smf1_f] = IP_CQEM_FD(uf,dt,dz,NOLM.smf1,fo,tol,dplot,1);
-    ufo = ufo.*exp(1i*PhaseShift);
+%     ufo = ufo.*exp(1i*PhaseShift);
     [ufo,~,Plotdata_smf2_f] = IP_CQEM_FD(ufo,dt,dz,NOLM.smf2,fo,tol,dplot,1);
     % forward light cp1o-smf1-NRPS-smf2-cp2o
     [ubo,~,Plotdata_smf1] = IP_CQEM_FD(ub,dt,dz,NOLM.smf2,fo,tol,dplot,1);
-    ubo = ubo.*exp(-1i*PhaseShift);
+%     ubo = ubo.*exp(-1i*PhaseShift);
     [ubo,~,Plotdata_smf2] = IP_CQEM_FD(ubo,dt,dz,NOLM.smf1,fo,tol,dplot,1);
     
     [ur,ut] = coupler(ubo,ufo,NOLM.rho);
