@@ -10,7 +10,7 @@ The project is currently under development.
 
 ## Technologies
 The project is created with:
-* MATLAB version: 2016b
+* MATLAB version: 2018b
 
 ## Examples
 mainP1.m: run a simulation and produce results of Point 1 of Figure 2 in [[2](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-25-4-4414)].
