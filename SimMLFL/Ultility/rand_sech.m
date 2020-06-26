@@ -5,8 +5,8 @@ function [u0] = rand_sech(nt, time_window, beta2,gamma)
 % compaired with plain random numbers
 
 if(nargin == 2)
-    beta2 = 25;
-    gamma = 3;
+    beta2 = 20.1814;
+    gamma = 1.8317;
 end
 
 dt = time_window/nt;
