@@ -3,8 +3,8 @@ classdef Configuration
     %   Detailed explanation goes here
     
     properties
-        nt = 2^10       % number of points
-        time = 100      % width of time window (ps)
+        nt = 2^12       % number of points
+        time = 120      % width of time window (ps)
         lambda0 = 1030  % pulse central wavelength (nm)
         tol = 1e-7      % tolerance
         N_trip = 300    % number of total runtrips
