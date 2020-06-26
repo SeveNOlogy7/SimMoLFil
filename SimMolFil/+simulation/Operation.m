@@ -82,7 +82,7 @@ classdef Operation
                 params = strings(length(parameter_names),1);
                 for ii = 1:length(parameter_names)
                     param = obj.parameters.(parameter_names{ii});
-                    if isa(param,"double") || isa(param,"string")
+                    if length(param) == 1 && isa(param,"double") || isa(param,"string")
                         params(ii) = parameter_names{ii}+"="+param;
                     else
                         params(ii) = parameter_names{ii}+"="+class(param);

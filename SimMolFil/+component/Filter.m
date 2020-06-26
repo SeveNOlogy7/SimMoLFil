@@ -28,7 +28,7 @@ classdef Filter
             % ui: input field amplitude (column vector)
             % fo: central pulse frequency (THz)
             % df: frequencies separation (THz)
-            uo = filter_gauss(ui',obj.f3dB,obj.fc,obj.order,f0,df) ;
+            uo = filter_gauss(transpose(ui),obj.f3dB,obj.fc,obj.order,f0,df) ;
         end
     end
     

@@ -144,22 +144,25 @@ classdef Model
         end
         
         % getters
-        function t = get_operation(obj)
-            t = obj.operation;
+        function id = get_id(obj)
+            id = obj.id;
+        end
+        function op = get_operation(obj)
+            op = obj.operation;
         end
         
-        function t = get_op_type(obj)
-            t = obj.operation.op_type;
+        function op_type = get_op_type(obj)
+            op_type = obj.operation.op_type;
         end
         
-        function t = get_op_name(obj)
-            t = obj.operation.name;
+        function op_name = get_op_name(obj)
+            op_name = obj.operation.name;
         end
         
         function t = get_inputs_id(obj)
             t = zeros(1,length(obj.inputs));
             for ii = 1:length(t)
-                t(ii) = obj.inputs(ii).id+1;    % to MATLAB convention
+                t(ii) = obj.inputs(ii).id;	% (0:) not MATLAB convention
             end
         end
         
