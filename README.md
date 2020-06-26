@@ -4,10 +4,9 @@ A **Mode-Locked Fiber Laser (MoLFil)** simulator.
 ## General info
 This project simulates pulses generation and evolution in mode-locke fiber lasers.
 The pulse evolution in fiber is calcuated by solving GNLSE using Interaction Picture Method Algorithm [[1](https://ieeexplore.ieee.org/abstract/document/6153336)].
-The codes in folder SimMLFL were originally written for this paper [[2](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-25-4-4414)].
-This project currently contains only a minimum amount of the whole codes used in [[2](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-25-4-4414)].
+The [original codes](https://github.com/SeveNOlogy7/SimMoLFil/tree/e5cd7787960a503ebab0ab7e6fc6a859b3413667) of this project were written for this paper [[2](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-25-4-4414)], which contains only a minimum amount of the whole codes used.
 
-The foler SimMLFL contains codes described above. The foler SimMolFil contains works in progress.
+The project is currently under development.
 
 ## Technologies
 The project is created with:
@@ -39,7 +38,7 @@ All these can be done by adding a new Builder class to generate the evaluatable.
 Also, it turns out to be clear that, the idea of DFG presentation is not only suitable for Mode-locked fiber laser models, but also for Cascaded Fiber Supercontinuum Generation models.
 
 ### Examples of current DFG design
-Following is codes that generate a Cascaded Fiber Supercontinuum model.
+Following are codes that generate a Cascaded Fiber Supercontinuum model.
 
 ```MATLAB
 % Define a fiber component
@@ -87,7 +86,11 @@ And some helper methods to calculate parameters for those components.
 ### Todos
 - [x] DFG generation
 - [x] DFG build process
-- [ ] DFG Evaluation Class (working on it)
-- [ ] A pure MATLAB Builder implementation using existing codes in SimMLFL (working on it)
+- [ ] A pure MATLAB Builder implementation using existing codes in SimMLFL
+    - [x] DFG Evaluation Class
+    - [ ] flow control operations
+        - [ ] e.g in F8L model, how to plot uout then go back to main loop 
 - [ ] Fill component package with concrete classes
+    - [x] components need for F8L
+    - [ ] more components
 - [ ] Examples
