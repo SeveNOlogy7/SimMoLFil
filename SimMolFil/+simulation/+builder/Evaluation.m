@@ -162,21 +162,6 @@ classdef Evaluation < handle
             obj.pointer = obj.pointer + 1;
         end
         
-        function Switch(obj, model, operation, args, kwargs)
-            persistent First_run_flag
-            condition = operation.parameters.("condition");
-            if condition == "First_Run"
-                if isempty(First_run_flag)
-                    u = args(:,1);
-                    First_run_flag = true;
-                else
-                    u = args(:,2);
-                end
-            end
-            obj.variables(:,obj.ids(obj.pointer)+1) = u;
-            obj.pointer = obj.pointer + 1;
-        end
-        
         function Recurrence(obj, model, operation, args, kwargs)
             config = kwargs.("configuration");
             condition = operation.parameters.("condition");

@@ -85,19 +85,6 @@ classdef DFGTest < matlab.unittest.TestCase
                 "t7 = OC.CouplerOut2[coupler=component.Coupler](t4,t5)"],newline));
         end
         
-        function testSwitch(testCase)
-            createFixture(testCase);
-            In1 = simulation.Input("In1");
-            In2 = simulation.Input("In2");
-            S = simulation.Switch("S","First_Run");
-            Out = S(In1,In2);
-            statements = Out.statements()
-            testCase.verifyEqual(statements,...
-                join(["t0 = In1.Input()",...
-                "t1 = In2.Input()",...
-                "t2 = S.Switch[condition=First_Run](t0,t1)"],newline));
-        end
-        
         function testShow(testCase)
             createFixture(testCase);
             In = simulation.Input("In");
@@ -136,26 +123,22 @@ classdef DFGTest < matlab.unittest.TestCase
             
             SMF = simulation.Fiber("SMF", fiber);
             OC = simulation.Coupler("OC", coupler);
-            S = simulation.Switch("S","First_Run");
             
             feedback = simulation.Feedback();
             
             In = simulation.Input("In");
-            u = simulation.Recurrence("u",0,"Run_until_stop");
-            u1 = S(In,u);
-            [u2, ~] = [u1, 0] + OC;
-            t = feedback(u,u2);
+            u = simulation.Recurrence("u",In,"Run_until_stop");
+            [u1, ~] = [u, 0] + OC;
+            t = feedback(u,u1);
             
             % use the latest model to see the whole statements
             statements = t.statements()
             testCase.verifyEqual(statements,...
-                join(["t1 = .Const[value=0]()",...
-                "t2 = u.Recurrence[condition=Run_until_stop](t1)",...
-                "t0 = In.Input()",...
-                "t3 = S.Switch[condition=First_Run](t0,t2)",...
-                "t4 = .Const[value=0]()",...
-                "t5 = OC.CouplerOut1[coupler=component.Coupler](t3,t4)",...
-                "t7 = u.Feedback(t2,t5)"],newline));
+                join(["t0 = In.Input()",...
+                "t1 = u.Recurrence[condition=Run_until_stop](t0)",...
+                "t2 = .Const[value=0]()",...
+                "t3 = OC.CouplerOut1[coupler=component.Coupler](t1,t2)",...
+                "t5 = u.Feedback(t1,t3)"],newline));
         end
         
         function testFigure8(testCase)
@@ -177,14 +160,12 @@ classdef DFGTest < matlab.unittest.TestCase
             
             OC = simulation.Coupler("OC", coupler_output);
             Coupler_NOLM = simulation.Coupler("Coupler_NOLM", coupler_NOLM);
-            S = simulation.Switch("S","First_Run");
             
             feedback = simulation.Feedback();
             
             In = simulation.Input("In");
-            u = simulation.Recurrence("u",0,"Run_until_stop");
-            u1 = S(In,u);
-            u3 = u1 + SMF1 + AF + SMF2;
+            u = simulation.Recurrence("u",In,"Run_until_stop");
+            u3 = u + SMF1 + AF + SMF2;
             [u4, ~] = [u3, 0] + OC;
             u5 = u4 + SMF3 + BPF + SMF4;
             [u6, u7] = [u5, 0] + Coupler_NOLM;

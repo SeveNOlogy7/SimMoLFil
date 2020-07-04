@@ -152,7 +152,7 @@ classdef EvaluationTest < matlab.unittest.TestCase
             testCase.assertEqual(result2,u2o,"RelTol",1e-6);
         end
         
-        function testRecuurenceSwitch(testCase)
+        function testRecuurence(testCase)
             createFixture(testCase);
             
             config = simulation.Configuration();
@@ -162,20 +162,19 @@ classdef EvaluationTest < matlab.unittest.TestCase
             fiber = fiber.cal_gamma(config.lambda0);
             
             SMF = simulation.Fiber("SMF", fiber);
-            S = simulation.Switch("S","First_Run");
             
             feedback = simulation.Feedback();
             
             In = simulation.Input("In");
             u = simulation.Recurrence("u",In,"Run_until_stop");
-            u1 = S(In,u) + SMF;
+            u1 = u + SMF;
             t = feedback(u,u1);
             
             config.N_trip = 10;
             Eval = t.build(simulation.builder.Builder());
             input = rand_sech(config.nt,config.time)';
             result = Eval(struct("configuration",config,...
-                "In",input,"Out_id",4));
+                "In",input,"Out_id",3));
             
             compare = input';
             for ii = 1:config.N_trip
@@ -217,17 +216,16 @@ classdef EvaluationTest < matlab.unittest.TestCase
             Coupler_NOLM = simulation.Coupler("Coupler_NOLM", coupler_NOLM);
             
             % define functional models
-            S = simulation.Switch("S","First_Run");
             feedback = simulation.Feedback();
             show = simulation.Show(struct());
             
             % connect models
-            % S(In,u)->BPF->SMF4->AMF1->SMF5->NOLM->OC->u
+            % In->u->BPF->SMF4->AMF1->SMF5->NOLM->OC->u
             In = simulation.Input("In");
             
             u = simulation.Recurrence("u",In,"Run_until_stop");
             
-            u1 = S(In,u) + BPF + SMF4 + AF + SMF5;
+            u1 = u + BPF + SMF4 + AF + SMF5;
             t = u1;
             [uf, ub] = [u1, 0] + Coupler_NOLM;
             ufo = uf + SMF1 + SMF2;
