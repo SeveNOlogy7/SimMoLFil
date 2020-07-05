@@ -86,11 +86,11 @@ And some helper methods to calculate parameters for those components.
 ### Todos
 - [x] DFG generation
 - [x] DFG build process
-- [ ] A pure MATLAB Builder implementation using existing codes in SimMLFL
+- [x] A pure MATLAB Builder implementation using existing codes in SimMLFL
     - [x] DFG Evaluation Class
-    - [ ] flow control operations
-        - [ ] e.g in F8L model, how to plot uout then go back to main loop 
+    - [x] flow control operations 
 - [ ] Fill component package with concrete classes
     - [x] components need for F8L
     - [ ] more components
+- [ ] Docs
 - [ ] Examples
