@@ -1,6 +1,7 @@
 function [op] = Feedback()
-%ASsIGN Create a Operation for Feedback
-%   No extra parameters
+%FEEDBACK Create a Operation for Feedback
+%   Usage:
+%       uout = Feedback(u_reccurence,u_in);
 
 import simulation.*
 

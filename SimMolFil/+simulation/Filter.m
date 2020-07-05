@@ -1,6 +1,8 @@
 function [op] = Filter(name, filter)
-%FILTER Summary of this function goes here
-%   Detailed explanation goes here
+%FILTER Create a Filter Operation
+%   Usage:
+%       filter = Filter(name, filter);
+%       uout = uin + filter;
 
 import simulation.*
 

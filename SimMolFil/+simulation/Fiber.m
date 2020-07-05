@@ -3,6 +3,9 @@ function [op] = Fiber(name,fiber)
 %   name: name of the Fiber Operation
 %   fiber: a fiber component object, which will eventually be used to
 %   calculation pulse propagation
+%   Usage:
+%       fiber = Fiber(name,fiber);
+%       uout = uin + fiber;
 
 import simulation.*
 

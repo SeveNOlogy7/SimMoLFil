@@ -2,6 +2,8 @@ function [m] = Input(name)
 %INPUT Create a Model object that asks for input
 %   name: name of the input operation
 %   some input will eventually be put into a variable called name
+%   Usage:
+%       in = Input(name);
 
 import simulation.*
 
