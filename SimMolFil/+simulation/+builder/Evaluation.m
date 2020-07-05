@@ -186,6 +186,11 @@ classdef Evaluation < handle
             obj.pointer = find(obj.ids==inputs_id(1));
         end
         
+        function Join(obj, model, operation, args, kwargs)
+            obj.variables(:,obj.ids(obj.pointer)+1) = args(:,1);
+            obj.pointer = obj.pointer + 1;
+        end
+        
     end
 end
 

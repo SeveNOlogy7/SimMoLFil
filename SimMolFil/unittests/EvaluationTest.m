@@ -218,6 +218,7 @@ classdef EvaluationTest < matlab.unittest.TestCase
             % define functional models
             feedback = simulation.Feedback();
             show = simulation.Show(struct());
+            join = simulation.Join();
             
             % connect models
             % In->u->BPF->SMF4->AMF1->SMF5->NOLM->OC->u
@@ -232,8 +233,9 @@ classdef EvaluationTest < matlab.unittest.TestCase
             ubo = ub + SMF2 + SMF1;
             [ur,ut] = [ubo, ufo] + Coupler_NOLM;
             
-            [u2, uout] = [ut, 0] + OC;  % no way to show uout for now
-            t = feedback(u,show(u2));
+            [u2, uout] = [ut, 0] + OC;
+            % show uout and feed u2 back to u
+            t = feedback(u,join(u2,show(uout)));
                   
             input = rand_sech(config.nt,config.time)';
             config.N_trip = 20;
