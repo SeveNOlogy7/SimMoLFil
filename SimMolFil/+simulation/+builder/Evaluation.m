@@ -131,9 +131,12 @@ classdef Evaluation < handle
         
         function Show(obj, model, operation, args, kwargs)
             config = kwargs.("configuration");
-            figure(10), 
-            plot(config.t, abs(args).^2,'r.-');axis tight;
-            pause(0.1);
+            plotter = operation.parameters.("plotter");
+            if ~isempty(plotter)
+                plotter(config,args);
+            else
+                error("Evaluation: no plotter for operation %s\n", operation);
+            end
             obj.variables(:,obj.ids(obj.pointer)+1) = args;
             obj.pointer = obj.pointer + 1;
         end

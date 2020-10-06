@@ -88,19 +88,19 @@ classdef DFGTest < matlab.unittest.TestCase
         function testShow(testCase)
             createFixture(testCase);
             In = simulation.Input("In");
-            show = simulation.Show(struct());
+            show = simulation.Show(struct("plotter",@plot_model));
             In = show(In); % It is fine to write like this
             statements1 = In.statements()
             testCase.verifyEqual(statements1,...
                 join(["t0 = In.Input()",...
-                "t1 = .Show(t0)",],newline));
+                "t1 = .Show[plotter=function_handle](t0)",],newline));
             
             In = simulation.Input("In");
             Out = show(In); % It is better to write like this
             statements2 = Out.statements()
             testCase.verifyEqual(statements2,...
                 join(["t2 = In.Input()",...
-                "t3 = .Show(t2)",],newline));
+                "t3 = .Show[plotter=function_handle](t2)",],newline));
             
             % In->SMF->Show->Out
             In = simulation.Input("In");
@@ -112,7 +112,7 @@ classdef DFGTest < matlab.unittest.TestCase
             testCase.verifyEqual(statements3,...
                 join(["t4 = In.Input()",...
                 "t5 = SMF.Fiber[fiber=component.Fiber](t4)",...
-                "t6 = .Show(t5)"],newline));
+                "t6 = .Show[plotter=function_handle](t5)"],newline));
         end
         
         function testRecuurence(testCase)

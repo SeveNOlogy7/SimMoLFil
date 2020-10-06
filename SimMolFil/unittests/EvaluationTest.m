@@ -14,7 +14,7 @@ classdef EvaluationTest < matlab.unittest.TestCase
     methods (Test)
         function testArrayInput(testCase)
             In = simulation.Input("In");
-            show = simulation.Show(struct());
+            show = simulation.Show(struct("plotter",@plot_model));
             Out = show(In);
             Eval = Out.build(simulation.builder.Builder());
             
@@ -27,7 +27,7 @@ classdef EvaluationTest < matlab.unittest.TestCase
         
         function testSechInput(testCase)
             In = simulation.Input("In");
-            show = simulation.Show(struct());
+            show = simulation.Show(struct("plotter",@plot_model));
             Out = show(In);
             Eval = Out.build(simulation.builder.Builder());
             
@@ -217,7 +217,7 @@ classdef EvaluationTest < matlab.unittest.TestCase
             
             % define functional models
             feedback = simulation.Feedback();
-            show = simulation.Show(struct());
+            show = simulation.Show(struct("plotter",@plot_model));
             join = simulation.Join();
             
             % connect models
