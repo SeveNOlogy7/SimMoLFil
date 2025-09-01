@@ -1,0 +1,424 @@
+% 40 MHz Laser Simulation based on modified optical path structure
+ 
+%% Structural Parameters
+lambda_bw = 11; 
+NOLM_L = 0.004;                      % adjusted to accommodate AMF1=0.8m and ensure positive SMF3 length
+PsatdBm = 23.5;                         % use cal_AmpSimpPara.m to calculate from pump power
+smf4_L = 0.0005;
+PhaseShift = pi/2;                      % Nonreciprocal Phase Shift for NOLM (NRPS)
+
+%% Simulation Parameter 
+ c = 299792.458;                      	% speed of light nm/ps
+ n_g = 1.468;                           % group refractive index (silica ~1030 nm)
+ lambda_pulse = 1030;                  	% pulse central lambda (nm)
+ fo=c/lambda_pulse;                       % central pulse frequency (THz)
+
+% Numerical Parameters
+nt = 2^12;                              % number of spectral points
+time = 200;                            	% ps (increased from 120ps to 200ps)
+dt = time/nt;                           % ps
+t = -time/2:dt:(time/2-dt);             % ps
+
+df=1/(nt*dt);                           % frequencies separation (Thz)
+f=-(nt/2)*df:df:(nt/2-1)*df;            % frequencies vector (en THz)
+lambda = c./(f + c/lambda_pulse);    	% lambdas vector (nm)
+w = 2*pi*f;                             % angular frequencies vector (in THz)
+dz = 0.00001;                        	% Initial longitudinal step (km)
+tol = 1e-7;
+N_trip = 200;
+
+% Some helpful settings
+plot_all_fig = 1;
+reinject_flag = 0;
+
+%% Set Component Parameters
+% Predefine of fiber parameters
+PM980.Amod = pi*3.3^2;                  % Mode Field Area (um^2)
+PM980.n2 = 2.6;                      	% Kerr coefficient (10^-16*cm^2/W)
+PM980.gamma = 2*pi*PM980.n2/lambda_pulse/PM980.Amod*1e4;	% W^-1 * km^-1
+PM980.alpha = 0;                       	% atenuation coef. (km^-1)
+PM980.betaw = [0 0 24.5864 26.1949e-3];	% beta coefficients (ps^n/nm)
+PM980.raman = 0;                      	% 0 = exclude raman effect
+PM980.ssp = 0;                        	% 0 = disable self sharpen effect
+
+PM1025 = PM980;
+PM1025.Amod = pi*5^2;
+PM1025.gamma = 2*pi*PM1025.n2/lambda_pulse/PM1025.Amod*1e4;
+PM1025.betaw = [0 0 20.8634 34.9621e-3];
+
+F10125 = PM980;
+F10125.Amod = pi*5.25^2;
+F10125.gamma = 2*pi*F10125.n2/lambda_pulse/F10125.Amod*1e4;
+F10125.betaw = [0 0 20.1814 36.8057e-3];
+
+% SMF4 module parameters (线性传输段)
+smf4 = F10125;
+smf4.L = smf4_L; 
+
+% NALM环路中的光纤参数
+% SMF1 module parameters
+NOLM.smf1 = F10125;
+NOLM.smf1.L = 0.0005;                   % fiber length (km)
+
+% AMF1 module parameters (NOLM环路中的增益光纤)
+NOLM.amf1 = F10125;
+NOLM.amf1.L = 0.0008;
+NOLM.amf1.gssdB = 37.5;                 % small signal gain coefficient(dB)
+NOLM.amf1.PsatdBm = PsatdBm;           % saturation input power(dBm)
+NOLM.amf1.fbw = c/(1030)^2*80; 
+NOLM.amf1.fc = c/1030;
+
+% SMF2 module parameters
+NOLM.smf2 = F10125;
+NOLM.smf2.L = 0.00210546;             % increased by ~1.80546 m to target ~40 MHz rep-rate (with n_g)
+
+% SMF3 module parameters (新增)
+NOLM.smf3 = F10125;
+NOLM.smf3.L = NOLM_L - NOLM.smf1.L - NOLM.smf2.L;
+
+% NRPS (非互易相移器) parameters
+NOLM.nrps.phase = PhaseShift; % 相移量 (rad)
+
+% 滤波器已移除 - 简化光路结构
+
+% coupler parameters
+% NOLM_rho = 0.70;                       % 将在扫描循环中设置
+rho_out = 0.30;                        % Output ratio = 1-rho_out (30% continue to SMF2, 70% output)
+
+% 计算腔长和重复频率
+Length_cavity = 2*smf4.L + NOLM.smf1.L + NOLM.amf1.L + NOLM.smf2.L + NOLM.smf3.L;
+RepeatFre = c/(n_g*Length_cavity);
+NOLM.amf1.RepeatFre = RepeatFre;
+
+%% INPUT FIELD
+u0 = rand_sech(nt,time);
+
+if ~reinject_flag
+    u = u0;
+end
+
+fprintf(1,'\n----------------------------------------------\n');
+fprintf('Input Peak Power (W) = %5.2f\n',max(u0.*conj(u0)));
+fprintf('Input Pulse Energy in pJ = %5.2f\n', dt*sum(u0.*conj(u0)));
+
+%% PROPAGATE finding numerical solution
+fprintf('\nModified NALM Laser Simulation started\n');
+% Initialize overall timer will be set per-length inside loop
+
+% Define NRPS Phase sweep (radians) - extended range
+scan_phases_rad = [180*pi/180]; % 固定180°相位
+results_conv_trips = zeros(1, numel(scan_phases_rad));
+results_conv_time_s = zeros(1, numel(scan_phases_rad));
+results_final_pulse = cell(1, numel(scan_phases_rad));
+results_peak_power = zeros(1, numel(scan_phases_rad));
+results_pulse_energy = zeros(1, numel(scan_phases_rad));
+results_pulse_width = zeros(1, numel(scan_phases_rad));
+results_labels = arrayfun(@(P)sprintf('%.2f rad (%.0f°)', P, P*180/pi), scan_phases_rad, 'UniformOutput', false);
+
+% 固定NOLM分束比为70%/30%
+NOLM_rho = 0.70; % 固定70%/30%分束比
+
+% 固定AMF1增益光纤长度为0.8m
+NOLM.amf1.L = 0.0008; % 固定为0.8m
+PhaseShift = scan_phases_rad(1); % 固定使用180°
+NOLM.nrps.phase = PhaseShift;
+
+% 固定SMF4长度为0.5m
+smf4.L = 0.0005;
+
+% 计算目标腔长以保持40MHz重复频率
+target_RepeatFre = 40e6; % 40 MHz
+target_cavity_length = c/(n_g * target_RepeatFre);
+
+% 调整NOLM环路长度以保持总腔长为目标值
+required_nolm_length = target_cavity_length - 2*smf4.L;
+
+% 先设置SMF3的基础长度，然后调整SMF2以达到目标NOLM长度
+base_smf3_length = 0.0005; % 0.5m基础长度
+NOLM.smf3.L = base_smf3_length;
+NOLM.smf2.L = required_nolm_length - NOLM.smf1.L - NOLM.amf1.L - NOLM.smf3.L;
+
+% 重新计算腔长参数（应该等于目标值）
+Length_cavity = 2*smf4.L + NOLM.smf1.L + NOLM.amf1.L + NOLM.smf2.L + NOLM.smf3.L;
+RepeatFre = c/(n_g*Length_cavity);
+NOLM.amf1.RepeatFre = RepeatFre;
+
+% Reset input field
+if ~reinject_flag
+    u = u0;
+end
+
+tic
+
+spec_z = zeros(N_trip,nt);
+u_z = spec_z;
+% 初始化脉冲能量记录数组
+pulse_energy = zeros(N_trip,1);
+
+h1 = waitbar(0, sprintf('Modified NALM simulation (AMF1=%.1fm)...', NOLM.amf1.L*1000));
+
+    dplot = 0;
+    dstop = 0;
+    dconv = 0;
+    convergence_trips = NaN;
+
+    for ii = 1:N_trip
+        if plot_all_fig == 1 && ii == N_trip
+            dplot = 1;
+        end
+        
+        % 修改后的光路：u->SMF4->NOLM(含AMF1)->输出耦合器->u
+        
+        % 1. 线性传输段：SMF4
+        [u,~,Plotdata_smf4] = IP_CQEM_FD(u,dt,dz,smf4,fo,tol,dplot,1);
+        
+        % 2. NOLM处理
+        % NOLM input coupler (70%/30% split)
+        [uf, ub] = coupler(u, 0, NOLM_rho);  % 70% forward, 30% backward
+        
+        % 2.1 顺时针路径：SMF1->AMF1->SMF2->NRPS->SMF3
+        [ufo,~,Plotdata_smf1_f] = IP_CQEM_FD(uf,dt,dz,NOLM.smf1,fo,tol,dplot,1);
+        [ufo,~,Plotdata_amf1_f] = IP_CQEM_FD(ufo,dt,dz,NOLM.amf1,fo,tol,dplot,0); % 增益光纤
+        % 在AMF1后添加70:30耦合器，70%继续传输，30%作为激光输出
+        [ufo, uout] = coupler(ufo, 0, rho_out); % 30%继续传输到SMF2，70%作为激光器输出uout
+        [ufo,~,Plotdata_smf2_f] = IP_CQEM_FD(ufo,dt,dz,NOLM.smf2,fo,tol,dplot,1);
+        ufo = ufo * exp(1i * NOLM.nrps.phase); % NRPS相移
+        [ufo,~,Plotdata_smf3_f] = IP_CQEM_FD(ufo,dt,dz,NOLM.smf3,fo,tol,dplot,1);
+        
+        % 2.2 逆时针路径：SMF3->NRPS->SMF2->AMF1->SMF1
+        [ubo,~,Plotdata_smf3_b] = IP_CQEM_FD(ub,dt,dz,NOLM.smf3,fo,tol,dplot,1);
+        % ubo = ubo * exp(1i * NOLM.nrps.phase); % NRPS相移
+        [ubo,~,Plotdata_smf2_b] = IP_CQEM_FD(ubo,dt,dz,NOLM.smf2,fo,tol,dplot,1);
+        [ubo,~,Plotdata_amf1_b] = IP_CQEM_FD(ubo,dt,dz,NOLM.amf1,fo,tol,dplot,0); % 增益光纤
+        [ubo,~,Plotdata_smf1_b] = IP_CQEM_FD(ubo,dt,dz,NOLM.smf1,fo,tol,dplot,1);
+        
+        % NOLM output coupler
+        [ur, ut] = coupler(ubo, ufo, NOLM_rho);
+        
+        % ur作为反射光，重新经过SMF4后作为腔内循环光
+        [u,~,~] = IP_CQEM_FD(ur,dt,dz,smf4,fo,tol,dplot,1);
+        
+        % 注意：激光器输出uout来自顺时针路径AMF1增益光纤后的70:30耦合器
+        % 原NOLM透射光ut不再作为主要输出
+        % uout = ut; % 原输出方式已禁用    
+        
+        % 绘制时域脉冲形状
+        figure(1);
+        plot(t,abs(uout).^2,'r.-');axis tight;
+        grid on;
+        xlabel('t (ps)');
+        ylabel('|u(z,t)|^2 (W)');
+        title('Modified NALM - Pulse Shape');
+        
+        % 绘制输出光谱
+        spec = fftshift(fft(uout));
+        specnorm = spec.*conj(spec);
+        specnorm = specnorm/max(specnorm);
+        figure(3)
+        plot(c./(f + fo),specnorm,'r.-');axis tight;
+        grid on;
+        xlabel('lambda (nm)');
+        ylabel('Normalized Spectrum (a.u.)');
+        title('Modified NALM - Output Spectrum');
+        
+        spec_z(ii,:) = specnorm;
+        u_z(ii,:) = uout;
+        
+        % 记录当前迭代的脉冲能量
+        pulse_energy(ii) = dt*sum(uout.*conj(uout));
+        
+        if dstop
+            break;
+        end
+       
+        % 更新进度条
+        try
+            waitbar(ii/N_trip,h1,sprintf('Modified NALM simulation...%d/%d',ii,N_trip));
+        catch err
+            if strcmp(err.identifier,'MATLAB:waitbar:InvalidSecondInput')
+                fprintf('\nSimulation is going to be terminated\n');
+            else
+                fprintf(err.message);
+            end       
+            if plot_all_fig ==1
+                dstop = 1;
+                dplot = 1;
+            else
+                break;
+            end
+        end 
+        
+        % 检查收敛条件
+        if ii>5
+            if max(xcorr_normal(spec_z(ii,:),spec_z(ii-1,:),nt/8))>0.99999
+                dconv = dconv + 1;
+                if dconv >= 5 
+                    fprintf('\nSimulation is going to terminate\n');
+                    convergence_trips = ii; % record convergence iteration
+                    if plot_all_fig ==1
+                        dstop = 1;
+                        dplot = 1;
+                    else
+                        break;
+                    end
+                end
+            else
+                dconv = 0;
+            end
+        end
+    end
+
+    try
+        close(h1)
+    catch err
+    end
+
+    tx = toc;
+    fprintf('\nSimulation lasted (s) = %5.2f\n', tx);
+    fprintf('\nOutput Peak Power (W) = %5.2f\n',max(uout.*conj(uout)));
+
+    PulseEnergy = dt*sum(uout.*conj(uout));
+    fprintf('Output Pulse Energy in pJ = %5.2f\n', PulseEnergy);
+
+    %% Plot results
+    phase_out = phase(uout);
+    delta_w = diff(phase_out);
+    Eout = abs(uout).^2;
+    [uout_max,I_uout_max] = max(Eout);
+    [width,~,~] = fwhm(Eout);
+    [~,I_l,I_r] = fwzm(Eout,1e-4);
+    range = I_l:I_r;
+
+% Store results for summary
+if isnan(convergence_trips)
+    convergence_trips = ii;
+end
+conv_time_s = convergence_trips / RepeatFre; % seconds
+
+fprintf('\n=== Modified NALM Simulation Results (AMF1=%.1fm) ===\n', NOLM.amf1.L*1000);
+fprintf('Peak Power: %.2f W\n', max(abs(uout).^2));
+fprintf('Pulse Energy: %.2f pJ\n', PulseEnergy);
+fprintf('Pulse Width (FWHM): %.2f ps\n', width*dt);
+fprintf('Repetition Rate: %.2f MHz\n', RepeatFre/1e6);
+fprintf('Cavity Length: %.4f km\n', Length_cavity);
+fprintf('SMF4 Length: %.4f km\n', smf4.L);
+fprintf('SMF3 Length: %.4f km\n', NOLM.smf3.L);
+fprintf('Stable Trips: %d\n', convergence_trips);
+fprintf('Stabilization Time: %.3f ms\n', conv_time_s*1e3);
+
+% 显示最终脉冲时域图
+figure(200);
+plot(t, abs(uout).^2, 'LineWidth', 2);
+xlabel('Time (ps)');
+ylabel('Power (W)');
+title(sprintf('NALM激光器时域脉冲 (AMF1=%.1fm)', NOLM.amf1.L*1000));
+grid on;
+print('NALM_固定AMF1_时域脉冲.png', '-dpng', '-r300');
+
+% 找到最优相位
+[min_trips, opt_idx] = min(results_conv_trips);
+opt_phase_rad = scan_phases_rad(opt_idx);
+opt_phase_deg = opt_phase_rad * 180/pi;
+
+fprintf('\n=== NRPS相位扫描优化结果 ===\n');
+fprintf('扫描范围: 0° - 330° (16个点)\n');
+fprintf('最优相位: %.2f rad (%.0f°)\n', opt_phase_rad, opt_phase_deg);
+fprintf('最优性能:\n');
+fprintf('  - 收敛往返次数: %d\n', results_conv_trips(opt_idx));
+fprintf('  - 稳定时间: %.3f ms\n', results_conv_time_s(opt_idx)*1e3);
+fprintf('  - 峰值功率: %.2f W\n', results_peak_power(opt_idx));
+fprintf('  - 脉冲能量: %.2f pJ\n', results_pulse_energy(opt_idx));
+fprintf('  - 脉冲宽度: %.2f ps\n', results_pulse_width(opt_idx));
+
+% 分析相位对性能的影响
+fprintf('\n=== 相位影响分析 ===\n');
+fprintf('峰值功率范围: %.2f - %.2f W (变化%.1f%%)\n', ...
+    min(results_peak_power), max(results_peak_power), ...
+    (max(results_peak_power)-min(results_peak_power))/mean(results_peak_power)*100);
+fprintf('脉冲能量范围: %.2f - %.2f pJ (变化%.1f%%)\n', ...
+    min(results_pulse_energy), max(results_pulse_energy), ...
+    (max(results_pulse_energy)-min(results_pulse_energy))/mean(results_pulse_energy)*100);
+fprintf('脉冲宽度范围: %.2f - %.2f ps (变化%.1f%%)\n', ...
+    min(results_pulse_width), max(results_pulse_width), ...
+    (max(results_pulse_width)-min(results_pulse_width))/mean(results_pulse_width)*100);
+
+% 优化建议
+fprintf('\n=== 优化建议 ===\n');
+if opt_phase_deg == 90
+    fprintf('1. 当前最优相位为π/2 (90°)，这是NOLM的经典工作点\n');
+elseif opt_phase_deg == 180
+    fprintf('1. 当前最优相位为π (180°)，提供最大非线性相移差\n');
+else
+    fprintf('1. 最优相位为%.0f°，建议在此基础上进行精细调节\n', opt_phase_deg);
+end
+
+if max(results_conv_trips) == 300
+    fprintf('2. 所有相位点均未在300次往返内收敛，建议：\n');
+    fprintf('   - 增加仿真往返次数至500-1000次\n');
+    fprintf('   - 优化其他参数（泵浦功率、光纤长度等）\n');
+else
+    fprintf('2. 部分相位点实现收敛，建议重点关注收敛性能好的相位区间\n');
+end
+
+fprintf('3. 建议在最优相位±15°范围内进行更精细的扫描\n');
+fprintf('4. 考虑NRPS相位与其他参数的联合优化\n');
+figure(7);
+subplot(2,2,1);
+plot(t, abs(uout).^2, 'b-', 'LineWidth', 2);
+xlabel('Time (ps)');
+ylabel('Power (W)');
+title('Output Pulse - Time Domain');
+grid on;
+
+subplot(2,2,2);
+plot(lambda, specnorm, 'r-', 'LineWidth', 2);
+xlabel('Wavelength (nm)');
+ylabel('Normalized Intensity');
+title('Output Spectrum - Frequency Domain');
+grid on;
+
+subplot(2,2,3);
+imagesc(1:ii, t, abs(u_z(1:ii,:)).^2');
+colorbar;
+xlabel('Round Trip');
+ylabel('Time (ps)');
+title('Pulse Evolution');
+
+subplot(2,2,4);
+imagesc(1:ii, lambda, spec_z(1:ii,:)');
+colorbar;
+xlabel('Round Trip');
+ylabel('Wavelength (nm)');
+title('Spectrum Evolution');
+
+% 绘制脉冲能量演化曲线
+figure(8);
+plot(1:ii, pulse_energy(1:ii), 'b-o', 'LineWidth', 2, 'MarkerSize', 4);
+xlabel('Round Trip Number');
+ylabel('Pulse Energy (pJ)');
+title('Pulse Energy Evolution');
+grid on;
+axis tight;
+
+% 添加能量变化趋势分析
+if ii > 10
+    energy_change = abs(pulse_energy(ii) - pulse_energy(ii-5)) / pulse_energy(ii-5) * 100;
+    text(0.6*ii, 0.9*max(pulse_energy(1:ii)), ...
+         sprintf('Energy change (last 5 trips): %.3f%%', energy_change), ...
+         'FontSize', 10, 'BackgroundColor', 'white');
+end
+
+fprintf('\n=== Modified NALM Simulation Results ===\n');
+fprintf('激光器输出来源：顺时针路径AMF1后70:30耦合器\n');
+fprintf('Peak Power: %.2f W\n', max(abs(uout).^2));
+fprintf('Pulse Energy: %.2f pJ\n', PulseEnergy);
+fprintf('Pulse Width (FWHM): %.2f ps\n', width*dt);
+fprintf('Repetition Rate: %.2f MHz\n', RepeatFre/1e6);
+fprintf('Cavity Length: %.4f km\n', Length_cavity);
+fprintf('NOLM Coupling Ratio: %.0f%%/%.0f%%\n', NOLM_rho*100, (1-NOLM_rho)*100);
+fprintf('NRPS Phase Shift: %.2f rad (%.1f deg)\n', NOLM.nrps.phase, NOLM.nrps.phase*180/pi);
+
+%% More plots if requested
+if dplot
+    % Plot_ML_result  % 如果需要更详细的结果图
+end
